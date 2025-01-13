@@ -14,3 +14,7 @@ readme = "README.md"
 [features]
 error_provide = []
 error_provide_feature = []
+axum = ["axum-core"]
+
+[dependencies]
+axum-core = { version = "0.5.0", optional = true }
