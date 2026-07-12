@@ -418,11 +418,16 @@ impl<T, Index, Head, Tail> Contains<T, Cons<Index, ()>> for Cons<Head, Tail> whe
 
 /// A trait for pulling a specific type out of a Variants at compile-time
 /// and having access to the other types as the Remainder.
-pub trait Narrow<Target, Index>: TupleForm {
+#[diagnostic::on_unimplemented(
+    message = "`OneOf<{_Tuple}>` cannot be narrowed to `{Target}`",
+    note = "`OneOf`s can only be narrowed to one of their possible types",
+)]
+pub trait Narrow<Target, Index, _Tuple = <Self as TupleForm>::Tuple>: TupleForm {
     type Remainder: TupleForm;
 }
 
 /// Base case where the search Target is in the Head of the Variants.
+#[diagnostic::do_not_recommend]
 impl<Target, Tail> Narrow<Target, End> for Cons<Target, Tail>
 where
     Tail: TupleForm,
@@ -432,6 +437,7 @@ where
 }
 
 /// Recursive case where the search Target is in the Tail of the Variants.
+#[diagnostic::do_not_recommend]
 impl<Head, Tail, Target, Index> Narrow<Target, Recurse<Index>> for Cons<Head, Tail>
 where
     Tail: Narrow<Target, Index>,
@@ -458,23 +464,35 @@ fn _narrow_test() {
 /* ------------------------- SupersetOf ----------------------- */
 
 /// When all types in a Variants are present in a second Variants
-pub trait SupersetOf<Other, Index> {
+#[diagnostic::on_unimplemented(
+    message = "`{_OtherTuple}` is not a subset of `{_SelfTuple}`",
+)]
+pub trait SupersetOf<
+    Other: TupleForm,
+    Index,
+    _SelfTuple = <Self as TupleForm>::Tuple,
+    _OtherTuple = <Other as TupleForm>::Tuple,
+>: TupleForm {
     type Remainder: TupleForm;
 }
 
 /// Base case
+#[diagnostic::do_not_recommend]
 impl<T: TupleForm> SupersetOf<End, End> for T {
     type Remainder = T;
 }
 
 /// Recursive case - more complex because we have to reason about the Index itself as a
 /// heterogenous list.
+#[diagnostic::do_not_recommend]
 impl<SubHead, SubTail, SuperHead, SuperTail, HeadIndex, TailIndex>
     SupersetOf<Cons<SubHead, SubTail>, Cons<HeadIndex, TailIndex>> for Cons<SuperHead, SuperTail>
 where
     Cons<SuperHead, SuperTail>: Narrow<SubHead, HeadIndex>,
     <Cons<SuperHead, SuperTail> as Narrow<SubHead, HeadIndex>>::Remainder:
         SupersetOf<SubTail, TailIndex>,
+    Cons<SubHead, SubTail>: TupleForm,
+    SubTail: TupleForm,
 {
     type Remainder =
         <<Cons<SuperHead, SuperTail> as Narrow<SubHead, HeadIndex>>::Remainder as SupersetOf<
@@ -487,6 +505,7 @@ fn _superset_test() {
     fn is_superset<S1, S2, Remainder, Index>()
     where
         S1: SupersetOf<S2, Index, Remainder = Remainder>,
+        S2: TupleForm,
     {
     }
 
