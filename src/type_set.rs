@@ -464,40 +464,40 @@ fn _narrow_test() {
 /* ------------------------- SupersetOf ----------------------- */
 
 /// When all types in a Variants are present in a second Variants
-#[diagnostic::on_unimplemented(
-    message = "`{_OtherTuple}` is not a subset of `{_SelfTuple}`",
-)]
+#[diagnostic::on_unimplemented(message = "`{_OtherTuple}` is not a subset of `{_SelfTuple}`")]
 pub trait SupersetOf<
-    Other: TupleForm,
+    Other,
     Index,
     _SelfTuple = <Self as TupleForm>::Tuple,
     _OtherTuple = <Other as TupleForm>::Tuple,
->: TupleForm {
+>: TupleForm
+{
     type Remainder: TupleForm;
 }
 
 /// Base case
 #[diagnostic::do_not_recommend]
-impl<T: TupleForm> SupersetOf<End, End> for T {
+impl<T: TupleForm, _SelfTuple, _OtherTuple> SupersetOf<End, End, _SelfTuple, _OtherTuple> for T {
     type Remainder = T;
 }
 
 /// Recursive case - more complex because we have to reason about the Index itself as a
 /// heterogenous list.
 #[diagnostic::do_not_recommend]
-impl<SubHead, SubTail, SuperHead, SuperTail, HeadIndex, TailIndex>
-    SupersetOf<Cons<SubHead, SubTail>, Cons<HeadIndex, TailIndex>> for Cons<SuperHead, SuperTail>
+impl<SubHead, SubTail, SuperHead, SuperTail, HeadIndex, TailIndex, _SelfTuple, _OtherTuple>
+    SupersetOf<Cons<SubHead, SubTail>, Cons<HeadIndex, TailIndex>, _SelfTuple, _OtherTuple>
+    for Cons<SuperHead, SuperTail>
 where
     Cons<SuperHead, SuperTail>: Narrow<SubHead, HeadIndex>,
     <Cons<SuperHead, SuperTail> as Narrow<SubHead, HeadIndex>>::Remainder:
-        SupersetOf<SubTail, TailIndex>,
-    Cons<SubHead, SubTail>: TupleForm,
-    SubTail: TupleForm,
+        SupersetOf<SubTail, TailIndex, _SelfTuple, _OtherTuple>,
 {
     type Remainder =
         <<Cons<SuperHead, SuperTail> as Narrow<SubHead, HeadIndex>>::Remainder as SupersetOf<
             SubTail,
             TailIndex,
+            _SelfTuple,
+            _OtherTuple,
         >>::Remainder;
 }
 
